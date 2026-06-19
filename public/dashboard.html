@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Complaint Management System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="dash-layout">
+
+    <!-- HEADER -->
+    <div class="dash-header">
+        <div class="brand">📋 Complaint Management System — Admin Dashboard</div>
+        <div class="a-info">
+            <span>👤 <strong id="adminName">Admin</strong></span>
+            <button class="btn-sm-white" onclick="logout()">🚪 Logout</button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="dash-content">
+
+        <!-- STAT CARDS -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-num" id="sTotal">0</div>
+                <div class="stat-label">📋 Total</div>
+            </div>
+            <div class="stat-card s-pending">
+                <div class="stat-num" id="sPending">0</div>
+                <div class="stat-label">⏳ Pending</div>
+            </div>
+            <div class="stat-card s-progress">
+                <div class="stat-num" id="sProgress">0</div>
+                <div class="stat-label">🔧 In Progress</div>
+            </div>
+            <div class="stat-card s-resolved">
+                <div class="stat-num" id="sResolved">0</div>
+                <div class="stat-label">✅ Resolved</div>
+            </div>
+        </div>
+
+        <!-- TOOLBAR -->
+        <div class="toolbar">
+            <input type="text" id="searchInput" placeholder="🔍 Search by Complaint ID or Employee Name..." oninput="filterTable()">
+            <select id="statusFilter" onchange="filterTable()">
+                <option value="">All Statuses</option>
+                <option value="Pending">⏳ Pending</option>
+                <option value="In Progress">🔧 In Progress</option>
+                <option value="Resolved">✅ Resolved</option>
+            </select>
+            <button class="btn-refresh" onclick="loadAll()">🔄 Refresh</button>
+        </div>
+
+        <!-- TABLE -->
+        <div class="table-box">
+            <div class="table-top">
+                <h3>🎫 All Complaints</h3>
+                <span class="t-count" id="tCount">Loading...</span>
+            </div>
+
+            <div id="loadingRow" style="text-align:center;padding:40px;color:#999;">⏳ Loading complaints...</div>
+
+            <div id="tableArea" style="display:none;">
+                <table class="main-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Complaint ID</th>
+                            <th>Employee Name</th>
+                            <th>Emp ID</th>
+                            <th>Dept</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+                <div class="no-data" id="noData" style="display:none;">
+                    <div class="icon">📭</div>
+                    <p>No complaints found.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- =====================
+     REPLY MODAL
+     (Popup to send reply)
+     ===================== -->
+<div class="modal-overlay" id="replyModal">
+    <div class="modal-box">
+        <h3>💬 Send Reply to User</h3>
+        <p class="modal-sub" id="modalSubTitle">Complaint ID: —</p>
+        <textarea id="replyText" placeholder="Type your reply message here..."></textarea>
+        <div class="modal-btns">
+            <button class="btn-send"   onclick="sendReply()">📤 Send Reply</button>
+            <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let allTickets = [];
+    let replyTicketId = null;
+
+    // ── On load ──
+    window.onload = async () => {
+        const res  = await fetch('/api/admin/check');
+        const data = await res.json();
+        if (!data.loggedIn) { window.location.href = '/admin'; return; }
+        document.getElementById('adminName').textContent = data.username;
+        await loadAll();
+    };
+
+    async function loadAll() {
+        await loadStats();
+        await loadTickets();
+    }
+
+    // ── Load stats ──
+    async function loadStats() {
+        const res  = await fetch('/api/admin/stats');
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('sTotal').textContent    = data.stats.total      || 0;
+            document.getElementById('sPending').textContent  = data.stats.pending    || 0;
+            document.getElementById('sProgress').textContent = data.stats.inProgress || 0;
+            document.getElementById('sResolved').textContent = data.stats.resolved   || 0;
+        }
+    }
+
+    // ── Load tickets ──
+    async function loadTickets() {
+        document.getElementById('loadingRow').style.display = 'block';
+        document.getElementById('tableArea').style.display  = 'none';
+
+        const res  = await fetch('/api/admin/tickets');
+        const data = await res.json();
+        if (!data.success) { window.location.href = '/admin'; return; }
+        allTickets = data.tickets;
+        renderTable(allTickets);
+
+        document.getElementById('loadingRow').style.display = 'none';
+        document.getElementById('tableArea').style.display  = 'block';
+    }
+
+    // ── Render table rows ──
+    function renderTable(tickets) {
+        const tbody  = document.getElementById('tableBody');
+        const noData = document.getElementById('noData');
+        document.getElementById('tCount').textContent = `${tickets.length} complaint(s)`;
+
+        if (tickets.length === 0) {
+            tbody.innerHTML = '';
+            noData.style.display = 'block';
+            return;
+        }
+        noData.style.display = 'none';
+
+        tbody.innerHTML = tickets.map((t, i) => {
+            const date = new Date(t.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            const desc = t.description.length > 45 ? t.description.substring(0, 45) + '...' : t.description;
+            const replyPreview = t.admin_reply
+                ? `<span style="font-size:11px;color:#1a73e8;display:block;margin-top:3px;">✓ Reply sent</span>`
+                : '';
+            return `
+                <tr id="row-${t.id}">
+                    <td style="color:#aaa;">${i + 1}</td>
+                    <td><span class="ticket-id-badge">${t.ticket_id}</span></td>
+                    <td><strong>${t.employee_name}</strong></td>
+                    <td style="color:#666;">${t.employee_id}</td>
+                    <td>${t.department}</td>
+                    <td>${getCatEmoji(t.category)} ${t.category}</td>
+                    <td style="color:#555;" title="${t.description}">${desc}</td>
+                    <td>
+                        <select class="status-select" onchange="updateStatus(${t.id}, this.value)">
+                            <option value="Pending"     ${t.status==='Pending'     ?'selected':''}>⏳ Pending</option>
+                            <option value="In Progress" ${t.status==='In Progress' ?'selected':''}>🔧 In Progress</option>
+                            <option value="Resolved"    ${t.status==='Resolved'    ?'selected':''}>✅ Resolved</option>
+                        </select>
+                    </td>
+                    <td style="color:#888;font-size:12px;">${date}</td>
+                    <td>
+                        <button class="btn-reply" onclick="openModal(${t.id}, '${t.ticket_id}')">💬 Reply</button>
+                        ${replyPreview}
+                        <button class="btn-del" onclick="deleteTicket(${t.id}, '${t.ticket_id}')">🗑️ Delete</button>
+                    </td>
+                </tr>`;
+        }).join('');
+    }
+
+    // ── Filter table ──
+    function filterTable() {
+        const s = document.getElementById('searchInput').value.toLowerCase();
+        const f = document.getElementById('statusFilter').value;
+        const filtered = allTickets.filter(t =>
+            (!s || t.ticket_id.toLowerCase().includes(s) || t.employee_name.toLowerCase().includes(s)) &&
+            (!f || t.status === f)
+        );
+        renderTable(filtered);
+    }
+
+    // ── Update status ──
+    async function updateStatus(id, status) {
+        const res  = await fetch(`/api/admin/tickets/${id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+        const data = await res.json();
+        if (data.success) {
+            const t = allTickets.find(t => t.id === id);
+            if (t) t.status = status;
+            await loadStats();
+            showToast('✅ Status updated to: ' + status);
+        } else { showToast('❌ Update failed.', 'error'); }
+    }
+
+    // ── Open reply modal ──
+    function openModal(ticketId, ticketCode) {
+        replyTicketId = ticketId;
+        document.getElementById('modalSubTitle').textContent = 'Complaint: ' + ticketCode;
+        const existing = allTickets.find(t => t.id === ticketId);
+        document.getElementById('replyText').value = existing?.admin_reply || '';
+        document.getElementById('replyModal').classList.add('open');
+    }
+
+    function closeModal() {
+        document.getElementById('replyModal').classList.remove('open');
+        replyTicketId = null;
+    }
+
+    // ── Send reply ──
+    async function sendReply() {
+        const reply = document.getElementById('replyText').value.trim();
+        if (!reply) { showToast('⚠️ Reply message cannot be empty.', 'error'); return; }
+
+        const res  = await fetch(`/api/admin/tickets/${replyTicketId}/reply`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reply }) });
+        const data = await res.json();
+
+        if (data.success) {
+            const t = allTickets.find(t => t.id === replyTicketId);
+            if (t) t.admin_reply = reply;
+            closeModal();
+            renderTable(allTickets);
+            showToast('💬 Reply sent successfully!');
+        } else { showToast('❌ Failed to send reply.', 'error'); }
+    }
+
+    // ── Delete ticket ──
+    async function deleteTicket(id, code) {
+        if (!confirm(`Delete complaint ${code}? This cannot be undone.`)) return;
+        const res  = await fetch(`/api/admin/tickets/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            allTickets = allTickets.filter(t => t.id !== id);
+            renderTable(allTickets);
+            await loadStats();
+            showToast('🗑️ Complaint deleted.');
+        } else { showToast('❌ Delete failed.', 'error'); }
+    }
+
+    // ── Logout ──
+    async function logout() {
+        if (!confirm('Logout from admin?')) return;
+        await fetch('/api/admin/logout', { method: 'POST' });
+        window.location.href = '/admin';
+    }
+
+    // ── Helpers ──
+    function getCatEmoji(c) {
+        return { Hardware:'🖥️', Software:'💿', Network:'🌐', Printer:'🖨️', Other:'❓' }[c] || '🔧';
+    }
+
+    function showToast(msg, type = 'success') {
+        document.querySelectorAll('.toast').forEach(e => e.remove());
+        const t = document.createElement('div');
+        t.className = `toast toast-${type === 'error' ? 'error' : 'success'}`;
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 3000);
+    }
+
+    // Close modal if clicking outside
+    document.getElementById('replyModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+</script>
+</body>
+</html>

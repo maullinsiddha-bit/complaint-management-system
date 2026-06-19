@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | Complaint Management System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="full-page">
+    <div class="auth-box">
+        <div class="auth-icon">🔐</div>
+        <h2>Admin Login</h2>
+        <p class="sub">Complaint Management System</p>
+
+        <div class="alert alert-error" id="alertError"></div>
+
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="username" placeholder="Enter admin username" onkeypress="enterKey(event)">
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="password" placeholder="Enter password" onkeypress="enterKey(event)">
+        </div>
+
+        <button class="btn-full" id="loginBtn" onclick="adminLogin()">🔓 Login to Dashboard</button>
+
+        <!-- Demo credentials hint -->
+        <div style="margin-top:20px; padding:12px; background:#f0f4ff; border-radius:8px; font-size:13px; color:#555; text-align:center;">
+            <strong>Demo:</strong> Username: <code>admin</code> &nbsp;|&nbsp; Password: <code>admin123</code>
+        </div>
+
+        <p style="text-align:center; margin-top:18px; font-size:13px;">
+            <a href="/" style="color:#1a73e8; text-decoration:none;">← Back to Home</a>
+        </p>
+    </div>
+</div>
+
+<script>
+    async function adminLogin() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+        const errBox   = document.getElementById('alertError');
+        const btn      = document.getElementById('loginBtn');
+        errBox.style.display = 'none';
+
+        if (!username || !password) {
+            errBox.textContent = '⚠️ Please enter username and password.';
+            errBox.style.display = 'block';
+            return;
+        }
+
+        btn.textContent = '⏳ Logging in...';
+        btn.disabled = true;
+
+        try {
+            const res  = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+            const data = await res.json();
+            if (data.success) {
+                window.location.href = '/dashboard';
+            } else {
+                errBox.textContent = '⚠️ ' + data.message;
+                errBox.style.display = 'block';
+                btn.textContent = '🔓 Login to Dashboard';
+                btn.disabled = false;
+            }
+        } catch (e) {
+            errBox.textContent = '⚠️ Server error. Make sure server is running.';
+            errBox.style.display = 'block';
+            btn.textContent = '🔓 Login to Dashboard';
+            btn.disabled = false;
+        }
+    }
+
+    function enterKey(e) { if (e.key === 'Enter') adminLogin(); }
+
+    // Already logged in? Redirect
+    window.onload = async () => {
+        const res  = await fetch('/api/admin/check');
+        const data = await res.json();
+        if (data.loggedIn) window.location.href = '/dashboard';
+    };
+</script>
+</body>
+</html>

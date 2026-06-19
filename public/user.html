@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Portal | Complaint Management System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="full-page">
+    <div class="auth-box">
+        <div class="auth-icon">👤</div>
+        <h2>User Portal</h2>
+        <p class="sub">Complaint Management System</p>
+
+        <!-- Tab buttons: Login / Register -->
+        <div style="display:flex; gap:8px; margin-bottom:24px;">
+            <button class="tab-btn active" id="tabLogin"    onclick="showTab('login')">Login</button>
+            <button class="tab-btn"        id="tabRegister" onclick="showTab('register')">Register</button>
+        </div>
+
+        <!-- Alert box (shows errors and success messages) -->
+        <div class="alert alert-error"   id="alertError"></div>
+        <div class="alert alert-success" id="alertSuccess"></div>
+
+        <!-- =====================
+             LOGIN FORM
+             ===================== -->
+        <div id="loginForm">
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="loginEmail" placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter your password">
+            </div>
+            <button class="btn-full" onclick="userLogin()">🔓 Login</button>
+            <div class="auth-switch">
+                Don't have an account? <a href="#" onclick="showTab('register')">Register here</a>
+            </div>
+        </div>
+
+        <!-- =====================
+             REGISTER FORM
+             ===================== -->
+        <div id="registerForm" style="display:none;">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="regName" placeholder="Your full name">
+                </div>
+                <div class="form-group">
+                    <label>Employee ID</label>
+                    <input type="text" id="regEmpId" placeholder="e.g. EMP-001">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="regEmail" placeholder="Your email address">
+            </div>
+            <div class="form-group">
+                <label>Department</label>
+                <select id="regDept">
+                    <option value="">-- Select Department --</option>
+                    <option>IT</option>
+                    <option>HR</option>
+                    <option>Finance</option>
+                    <option>Sales</option>
+                    <option>Marketing</option>
+                    <option>Operations</option>
+                    <option>Management</option>
+                    <option>Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="regPassword" placeholder="Create a password">
+            </div>
+            <button class="btn-full" onclick="userRegister()">📝 Create Account</button>
+            <div class="auth-switch">
+                Already have an account? <a href="#" onclick="showTab('login')">Login here</a>
+            </div>
+        </div>
+
+        <!-- Back to home -->
+        <p style="text-align:center; margin-top:20px; font-size:13px;">
+            <a href="/" style="color:#1a73e8; text-decoration:none;">← Back to Home</a>
+        </p>
+    </div>
+</div>
+
+<script>
+    // ── Switch between Login and Register tabs ──
+    function showTab(tab) {
+        document.getElementById('loginForm').style.display    = tab === 'login'    ? 'block' : 'none';
+        document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+        document.getElementById('tabLogin').classList.toggle('active',    tab === 'login');
+        document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+        hideAlerts();
+    }
+
+    function showError(msg)   { const a = document.getElementById('alertError');   a.textContent = '⚠️ ' + msg; a.style.display = 'block'; document.getElementById('alertSuccess').style.display = 'none'; }
+    function showSuccess(msg) { const a = document.getElementById('alertSuccess'); a.textContent = '✅ ' + msg; a.style.display = 'block'; document.getElementById('alertError').style.display = 'none'; }
+    function hideAlerts()     { document.getElementById('alertError').style.display = 'none'; document.getElementById('alertSuccess').style.display = 'none'; }
+
+    // ── USER LOGIN ──
+    async function userLogin() {
+        const email    = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+
+        if (!email || !password) return showError('Please fill in all fields.');
+
+        try {
+            const res  = await fetch('/api/user/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+            const data = await res.json();
+            if (data.success) {
+                window.location.href = '/user/portal';
+            } else {
+                showError(data.message);
+            }
+        } catch (e) { showError('Server error. Make sure the server is running.'); }
+    }
+
+    // ── USER REGISTER ──
+    async function userRegister() {
+        const name       = document.getElementById('regName').value.trim();
+        const employee_id= document.getElementById('regEmpId').value.trim();
+        const email      = document.getElementById('regEmail').value.trim();
+        const department = document.getElementById('regDept').value;
+        const password   = document.getElementById('regPassword').value.trim();
+
+        if (!name || !employee_id || !email || !department || !password) return showError('Please fill in all fields.');
+
+        try {
+            const res  = await fetch('/api/user/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password, employee_id, department }) });
+            const data = await res.json();
+            if (data.success) {
+                showSuccess(data.message);
+                setTimeout(() => showTab('login'), 1800);
+            } else {
+                showError(data.message);
+            }
+        } catch (e) { showError('Server error. Make sure the server is running.'); }
+    }
+
+    // Allow Enter key to submit
+    document.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            if (document.getElementById('loginForm').style.display !== 'none') userLogin();
+            else userRegister();
+        }
+    });
+
+    // If already logged in, redirect
+    window.onload = async () => {
+        const res  = await fetch('/api/user/check');
+        const data = await res.json();
+        if (data.loggedIn) window.location.href = '/user/portal';
+    };
+</script>
+</body>
+</html>

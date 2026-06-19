@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Portal | Complaint Management System</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* ── PAGE BACKGROUND ── */
+        body { background: #f0f4f8; }
+
+        /* ── TOP HEADER BAR ── */
+        .portal-header {
+            background: #0d47a1;
+            padding: 0 36px;
+            height: 66px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+        }
+        .portal-header .brand {
+            color: #fff;
+            font-size: 19px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        .portal-header .user-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            color: rgba(255,255,255,0.92);
+            font-size: 14px;
+        }
+        .portal-header .user-info strong { color: #fff; }
+        .btn-logout {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.35);
+            padding: 8px 18px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .btn-logout:hover { background: rgba(255,255,255,0.28); }
+
+        /* ── MAIN WRAPPER ── */
+        .portal-body {
+            max-width: 860px;
+            margin: 36px auto;
+            padding: 0 20px 60px;
+        }
+
+        /* ── WELCOME BANNER ── */
+        .welcome-banner {
+            background: linear-gradient(135deg, #1a73e8, #0d47a1);
+            border-radius: 16px;
+            padding: 28px 32px;
+            color: #fff;
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+        .welcome-banner .w-icon { font-size: 44px; }
+        .welcome-banner h2 { font-size: 22px; font-weight: 700; margin-bottom: 5px; }
+        .welcome-banner p  { font-size: 14px; opacity: 0.88; }
+
+        /* ── TABS ── */
+        .tab-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+        .tab-pill {
+            padding: 11px 28px;
+            border-radius: 50px;
+            border: 2px solid #dde3f0;
+            background: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-pill:hover { border-color: #1a73e8; color: #1a73e8; }
+        .tab-pill.active {
+            background: #1a73e8;
+            color: #fff;
+            border-color: #1a73e8;
+        }
+
+        /* ── WHITE CARD ── */
+        .p-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 36px 40px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+            border: 1px solid #eaeff6;
+        }
+        .p-card-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0d47a1;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .p-card-subtitle {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        /* ── FORM FIELDS ── */
+        .field { margin-bottom: 26px; }
+        .field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .field select,
+        .field textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            color: #2c3e50;
+            background: #fafbfd;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            line-height: 1.6;
+        }
+        .field select:focus,
+        .field textarea:focus {
+            outline: none;
+            border-color: #1a73e8;
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(26,115,232,0.08);
+        }
+        .field textarea {
+            min-height: 140px;
+            resize: vertical;
+        }
+
+        /* ── SUBMIT BUTTON ── */
+        .btn-submit-complaint {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #1a73e8, #0d47a1);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            letter-spacing: 0.4px;
+            margin-top: 6px;
+        }
+        .btn-submit-complaint:hover  { opacity: 0.92; transform: translateY(-1px); }
+        .btn-submit-complaint:active { transform: translateY(0); }
+
+        /* ── ERROR ALERT ── */
+        .err-box {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 13px 16px;
+            border-radius: 9px;
+            font-size: 14px;
+            margin-bottom: 22px;
+            display: none;
+        }
+
+        /* ── SUCCESS BOX ── */
+        .done-box {
+            display: none;
+            text-align: center;
+            padding: 20px 10px;
+        }
+        .done-box .done-icon { font-size: 64px; margin-bottom: 16px; }
+        .done-box h3 { font-size: 24px; color: #0d47a1; font-weight: 800; margin-bottom: 10px; }
+        .done-box p  { font-size: 15px; color: #555; margin-bottom: 6px; line-height: 1.7; }
+        .cmp-badge {
+            display: inline-block;
+            background: #0d47a1;
+            color: #fff;
+            padding: 10px 30px;
+            border-radius: 50px;
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin: 14px 0 20px;
+        }
+        .btn-again {
+            background: #1a73e8;
+            color: #fff;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 9px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* ── COMPLAINT CARDS (My Complaints) ── */
+        .cmp-card {
+            background: #fff;
+            border: 1px solid #e8edf5;
+            border-radius: 14px;
+            padding: 24px 28px;
+            margin-bottom: 18px;
+            box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+            transition: box-shadow 0.2s;
+        }
+        .cmp-card:hover { box-shadow: 0 4px 18px rgba(26,115,232,0.1); }
+
+        /* Row 1: Complaint ID + Status badge */
+        .cmp-row1 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .cmp-id-tag {
+            background: #e8f0fe;
+            color: #1a73e8;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Status badges */
+        .s-badge {
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+        .s-pending    { background: #fff8e1; color: #e65100; border: 1px solid #ffcc80; }
+        .s-inprogress { background: #e3f2fd; color: #0d47a1; border: 1px solid #90caf9; }
+        .s-resolved   { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
+
+        /* Row 2: Meta info */
+        .cmp-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 14px;
+            padding: 12px 16px;
+            background: #f8fafd;
+            border-radius: 9px;
+        }
+        .cmp-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #555;
+        }
+        .cmp-meta-item span.label {
+            font-weight: 700;
+            color: #333;
+        }
+
+        /* Row 3: Description */
+        .cmp-desc-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+            margin-bottom: 7px;
+        }
+        .cmp-desc-text {
+            font-size: 15px;
+            color: #2c3e50;
+            line-height: 1.75;
+            padding: 14px 16px;
+            background: #fafbfd;
+            border-radius: 9px;
+            border-left: 4px solid #dde3f0;
+            margin-bottom: 14px;
+        }
+
+        /* Row 4: Admin reply */
+        .reply-card {
+            background: #f0f7ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-top: 4px;
+        }
+        .reply-card .reply-header {
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: #1a73e8;
+            margin-bottom: 9px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .reply-card .reply-text {
+            font-size: 15px;
+            color: #1e3a5f;
+            line-height: 1.75;
+        }
+        .no-reply {
+            font-size: 13px;
+            color: #bbb;
+            font-style: italic;
+            padding: 10px 0 4px;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .empty-state .e-icon { font-size: 56px; margin-bottom: 16px; }
+        .empty-state h4 { font-size: 18px; color: #333; margin-bottom: 8px; }
+        .empty-state p  { font-size: 14px; color: #999; }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .p-card { padding: 24px 20px; }
+            .welcome-banner { padding: 22px 20px; }
+            .cmp-card { padding: 20px 18px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="portal-header">
+    <div class="brand">📋 Complaint Management System</div>
+    <div class="user-info">
+        <span>👤 <strong id="userName">User</strong></span>
+        <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+    </div>
+</div>
+
+<!-- MAIN BODY -->
+<div class="portal-body">
+
+    <!-- WELCOME BANNER -->
+    <div class="welcome-banner">
+        <div class="w-icon">👋</div>
+        <div>
+            <h2>Welcome, <span id="bannerName">User</span>!</h2>
+            <p>Submit a new IT complaint or view the status of your existing complaints below.</p>
+        </div>
+    </div>
+
+    <!-- TAB BUTTONS -->
+    <div class="tab-row">
+        <button class="tab-pill active" id="tabSubmit" onclick="showTab('submit')">📝 Submit Complaint</button>
+        <button class="tab-pill"        id="tabMine"   onclick="showTab('mine')">📋 My Complaints</button>
+    </div>
+
+    <!-- ========================
+         SUBMIT COMPLAINT TAB
+         ======================== -->
+    <div id="tabSubmitContent">
+        <div class="p-card">
+            <div class="p-card-title">📝 Submit New Complaint</div>
+            <div class="p-card-subtitle">Fill in the details below. Our IT team will review and respond to you.</div>
+
+            <!-- Form area -->
+            <div id="submitFormArea">
+
+                <!-- Error box -->
+                <div class="err-box" id="submitError"></div>
+
+                <!-- Category -->
+                <div class="field">
+                    <label>Problem Category</label>
+                    <select id="category">
+                        <option value="">-- Select a Category --</option>
+                        <option value="Hardware">🖥️ Hardware</option>
+                        <option value="Software">💿 Software</option>
+                        <option value="Network">🌐 Network</option>
+                        <option value="Printer">🖨️ Printer</option>
+                        <option value="Other">❓ Other</option>
+                    </select>
+                </div>
+
+                <!-- Description -->
+                <div class="field">
+                    <label>Problem Description</label>
+                    <textarea id="description" placeholder="Please describe your IT problem in detail.&#10;&#10;For example:&#10;- What is the issue?&#10;- When did it start?&#10;- What were you doing when it happened?"></textarea>
+                </div>
+
+                <!-- Submit button -->
+                <button class="btn-submit-complaint" onclick="submitComplaint()">
+                    🎫 Submit Complaint
+                </button>
+
+            </div>
+
+            <!-- Success box (shown after submission) -->
+            <div class="done-box" id="submitSuccess">
+                <div class="done-icon">🎉</div>
+                <h3>Complaint Submitted Successfully!</h3>
+                <p>Your complaint has been registered.</p>
+                <p>Your unique Complaint ID is:</p>
+                <div class="cmp-badge" id="newCmpId">CMP-0000</div>
+                <p style="color:#888; font-size:13px;">Please save this ID for your reference.<br>Our IT team will respond within 24 hours.</p>
+                <br>
+                <button class="btn-again" onclick="resetSubmitForm()">📝 Submit Another Complaint</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================
+         MY COMPLAINTS TAB
+         ======================== -->
+    <div id="tabMineContent" style="display:none;">
+        <div class="p-card">
+            <div class="p-card-title">📋 My Complaints</div>
+            <div class="p-card-subtitle">All complaints you have submitted. Check status and admin replies here.</div>
+            <div id="myTicketsList">
+                <div class="empty-state">
+                    <div class="e-icon">⏳</div>
+                    <h4>Loading your complaints...</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let currentUser = null;
+
+    // On page load — check if user is logged in
+    window.onload = async () => {
+        const res  = await fetch('/api/user/check');
+        const data = await res.json();
+        if (!data.loggedIn) { window.location.href = '/user'; return; }
+        currentUser = data.user;
+        document.getElementById('userName').textContent   = currentUser.name;
+        document.getElementById('bannerName').textContent = currentUser.name.split(' ')[0]; // First name only
+    };
+
+    // Switch between tabs
+    function showTab(tab) {
+        document.getElementById('tabSubmitContent').style.display = tab === 'submit' ? 'block' : 'none';
+        document.getElementById('tabMineContent').style.display   = tab === 'mine'   ? 'block' : 'none';
+        document.getElementById('tabSubmit').classList.toggle('active', tab === 'submit');
+        document.getElementById('tabMine').classList.toggle('active',   tab === 'mine');
+        if (tab === 'mine') loadMyTickets();
+    }
+
+    // Submit a complaint
+    async function submitComplaint() {
+        const category    = document.getElementById('category').value;
+        const description = document.getElementById('description').value.trim();
+        const errBox      = document.getElementById('submitError');
+        errBox.style.display = 'none';
+
+        if (!category) {
+            errBox.textContent = '⚠️ Please select a problem category.';
+            errBox.style.display = 'block'; return;
+        }
+        if (!description) {
+            errBox.textContent = '⚠️ Please describe your problem.';
+            errBox.style.display = 'block'; return;
+        }
+
+        try {
+            const res  = await fetch('/api/tickets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ category, description }) });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('submitFormArea').style.display = 'none';
+                document.getElementById('submitSuccess').style.display  = 'block';
+                document.getElementById('newCmpId').textContent = data.ticket_id;
+            } else {
+                errBox.textContent = '⚠️ ' + data.message;
+                errBox.style.display = 'block';
+            }
+        } catch (e) { alert('Server error. Make sure the server is running.'); }
+    }
+
+    // Reset the submit form
+    function resetSubmitForm() {
+        document.getElementById('submitFormArea').style.display = 'block';
+        document.getElementById('submitSuccess').style.display  = 'none';
+        document.getElementById('category').value    = '';
+        document.getElementById('description').value = '';
+        document.getElementById('submitError').style.display = 'none';
+    }
+
+    // Load user's own complaints
+    async function loadMyTickets() {
+        const box = document.getElementById('myTicketsList');
+        box.innerHTML = '<div class="empty-state"><div class="e-icon">⏳</div><h4>Loading...</h4></div>';
+
+        try {
+            const res  = await fetch('/api/tickets/my');
+            const data = await res.json();
+
+            if (!data.success || data.tickets.length === 0) {
+                box.innerHTML = `
+                    <div class="empty-state">
+                        <div class="e-icon">📭</div>
+                        <h4>No Complaints Yet</h4>
+                        <p>You have not submitted any complaints yet.<br>Click "Submit Complaint" tab to raise one.</p>
+                    </div>`;
+                return;
+            }
+
+            let html = '';
+            data.tickets.forEach(t => {
+                // Format date nicely
+                const date = new Date(t.created_at).toLocaleDateString('en-IN', {
+                    day: '2-digit', month: 'long', year: 'numeric'
+                });
+                const time = new Date(t.created_at).toLocaleTimeString('en-IN', {
+                    hour: '2-digit', minute: '2-digit'
+                });
+
+                // Status badge class
+                const badgeClass = t.status === 'Pending' ? 's-pending' : t.status === 'In Progress' ? 's-inprogress' : 's-resolved';
+                const statusEmoji = t.status === 'Pending' ? '⏳' : t.status === 'In Progress' ? '🔧' : '✅';
+
+                // Category emoji
+                const catEmoji = { Hardware:'🖥️', Software:'💿', Network:'🌐', Printer:'🖨️', Other:'❓' }[t.category] || '🔧';
+
+                // Admin reply section
+                const replySection = t.admin_reply
+                    ? `<div class="reply-card">
+                           <div class="reply-header">💬 Reply from IT Support Team</div>
+                           <div class="reply-text">${t.admin_reply}</div>
+                       </div>`
+                    : `<p class="no-reply">💬 No reply from admin yet. Please wait.</p>`;
+
+                html += `
+                    <div class="cmp-card">
+
+                        <!-- Row 1: ID + Status -->
+                        <div class="cmp-row1">
+                            <span class="cmp-id-tag">${t.ticket_id}</span>
+                            <span class="s-badge ${badgeClass}">${statusEmoji} ${t.status}</span>
+                        </div>
+
+                        <!-- Row 2: Meta info -->
+                        <div class="cmp-meta">
+                            <div class="cmp-meta-item">${catEmoji} <span class="label">Category:</span> ${t.category}</div>
+                            <div class="cmp-meta-item">🏢 <span class="label">Department:</span> ${t.department}</div>
+                            <div class="cmp-meta-item">📅 <span class="label">Date:</span> ${date}</div>
+                            <div class="cmp-meta-item">🕐 <span class="label">Time:</span> ${time}</div>
+                        </div>
+
+                        <!-- Row 3: Description -->
+                        <div class="cmp-desc-label">📄 Your Problem Description</div>
+                        <div class="cmp-desc-text">${t.description}</div>
+
+                        <!-- Row 4: Admin reply -->
+                        ${replySection}
+
+                    </div>`;
+            });
+
+            box.innerHTML = html;
+
+        } catch (e) {
+            box.innerHTML = '<div style="text-align:center;padding:30px;color:red;">❌ Failed to load complaints. Please refresh.</div>';
+        }
+    }
+
+    // Logout
+    async function logout() {
+        if (!confirm('Are you sure you want to logout?')) return;
+        await fetch('/api/user/logout', { method: 'POST' });
+        window.location.href = '/user';
+    }
+</script>
+
+</body>
+</html>
